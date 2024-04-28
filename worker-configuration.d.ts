@@ -3,4 +3,6 @@
 
 interface Env {
 	kv: KVNamespace;
+	GH_TOKEN: string;
+	WH_URL: string;
 }
