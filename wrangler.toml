@@ -1,0 +1,12 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "github-notification-notifier"
+main = "src/index.ts"
+compatibility_date = "2024-04-03"
+workers_dev = false
+
+[triggers]
+crons = ["* * * * *"]
+
+[[kv_namespaces]]
+binding = "kv"
+id = "7925cc7dd9ba4530a51585b6d410d2ce"

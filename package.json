@@ -1,0 +1,21 @@
+{
+  "name": "cfw-ghnotifier",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "start": "wrangler dev",
+    "cf-typegen": "wrangler types"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "wrangler": "^3.52.0"
+  },
+  "packageManager": "yarn@4.1.1",
+  "dependenciesMeta": {
+    "wrangler@3.52.0": {
+      "unplugged": true
+    }
+  }
+}
