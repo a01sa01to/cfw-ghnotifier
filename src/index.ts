@@ -1,33 +1,51 @@
-/**
- * Welcome to Cloudflare Workers!
- *
- * This is a template for a Scheduled Worker: a Worker that can run on a
- * configurable interval:
- * https://developers.cloudflare.com/workers/platform/triggers/cron-triggers/
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Bind resources to your worker in `wrangler.toml`. After adding bindings, a type definition for the
- * `Env` object can be regenerated with `npm run cf-typegen`.
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+import { Octokit } from 'octokit';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.tz.setDefault('Asia/Tokyo');
 
 export default {
-	// The scheduled handler is invoked at the interval set in our wrangler.toml's
-	// [[triggers]] configuration.
 	async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
-		// A Cron Trigger can make requests to other endpoints on the Internet,
-		// publish to a Queue, query a D1 Database, and much more.
-		//
-		// We'll keep it simple and make an API call to a Cloudflare API:
-		let resp = await fetch('https://api.cloudflare.com/client/v4/ips');
-		let wasSuccessful = resp.ok ? 'success' : 'fail';
+		if ((await env.kv.get('next-fetch')) === null) {
+			await env.kv.put('next-fetch', '0', { type: 'text' });
+		}
+		if ((await env.kv.get('last-fetched')) === null) {
+			await env.kv.put('last-fetched', '0', { type: 'text' });
+		}
 
-		// You could store this result in KV, write to a D1 Database, or publish to a Queue.
-		// In this template, we'll just log the result:
-		console.log(`trigger fired at ${event.cron}: ${wasSuccessful}`);
+		const now = dayjs();
+		const nextFetchTimeUnix = await env.kv.get('next-fetch');
+		const nextFetchTime = dayjs.unix(parseInt(nextFetchTimeUnix));
+		if (now.isBefore(nextFetchTime)) {
+			console.log("Skipped fetching because it's not time yet.");
+			return;
+		}
+
+		const lastFetchedTimeUnix = await env.kv.get('last-fetched');
+		const lastFetchedTime = dayjs.unix(parseInt(lastFetchedTimeUnix));
+
+		const octokit = new Octokit({ auth: env.GH_TOKEN });
+
+		const res = await octokit.request('GET /notifications', {
+			since: lastFetchedTime.toISOString(),
+			before: now.toISOString(),
+			headers: {
+				'X-GitHub-Api-Version': '2022-11-28',
+				accept: 'application/vnd.github+json',
+			},
+		});
+
+		const notifications = res.data;
+		const pollInterval = res.headers['X-Poll-Interval'] ?? 60;
+
+		// TODO: Send Webhook
+		console.log('notifications', notifications);
+		console.log('pollInterval', pollInterval);
+
+		await env.kv.put('last-fetched', now.unix().toString(), { type: 'text' });
+		await env.kv.put('next-fetch', now.add(parseInt(pollInterval.toString()), 'seconds').unix().toString(), { type: 'text' });
 	},
 };
