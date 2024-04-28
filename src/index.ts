@@ -9,17 +9,11 @@ dayjs.tz.setDefault('Asia/Tokyo');
 
 export default {
 	async scheduled(_event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
-		if ((await env.kv.get('next-fetch')) === null) {
-			await env.kv.put('next-fetch', '0', { type: 'text' });
-		}
 		if ((await env.kv.get('last-fetched')) === null) {
 			await env.kv.put('last-fetched', '0', { type: 'text' });
 		}
 
 		const now = dayjs();
-		const nextFetchTimeUnix = await env.kv.get('next-fetch');
-		const nextFetchTime = dayjs.unix(parseInt(nextFetchTimeUnix));
-
 		const lastFetchedTimeUnix = await env.kv.get('last-fetched');
 		const lastFetchedTime = dayjs.unix(parseInt(lastFetchedTimeUnix));
 
@@ -40,16 +34,12 @@ export default {
 				console.error(err);
 				return {
 					data: [],
-					headers: {
-						'X-Poll-Interval': 60,
-					},
 				};
 			});
 
 		const notifications = res.data.sort((a, b) => {
 			return dayjs(a.updated_at).isBefore(dayjs(b.updated_at)) ? -1 : 1;
 		});
-		const pollInterval = res.headers['X-Poll-Interval'] ?? 60;
 
 		for (const notification of notifications) {
 			let emoji = 'question';
@@ -142,6 +132,5 @@ export default {
 		}
 
 		await env.kv.put('last-fetched', now.unix().toString(), { type: 'text' });
-		await env.kv.put('next-fetch', now.add(parseInt(pollInterval.toString()), 'seconds').unix().toString(), { type: 'text' });
 	},
 };
