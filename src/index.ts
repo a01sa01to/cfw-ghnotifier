@@ -19,24 +19,32 @@ export default {
 		const now = dayjs();
 		const nextFetchTimeUnix = await env.kv.get('next-fetch');
 		const nextFetchTime = dayjs.unix(parseInt(nextFetchTimeUnix));
-		if (now.isBefore(nextFetchTime)) {
-			console.log("Skipped fetching because it's not time yet.");
-			return;
-		}
 
 		const lastFetchedTimeUnix = await env.kv.get('last-fetched');
 		const lastFetchedTime = dayjs.unix(parseInt(lastFetchedTimeUnix));
 
 		const octokit = new Octokit({ auth: env.GH_TOKEN });
 
-		const res = await octokit.request('GET /notifications', {
-			since: lastFetchedTime.toISOString(),
-			before: now.toISOString(),
-			headers: {
-				'X-GitHub-Api-Version': '2022-11-28',
-				accept: 'application/vnd.github+json',
-			},
-		});
+		const res = await octokit
+			.request('GET /notifications', {
+				since: lastFetchedTime.toISOString(),
+				headers: {
+					'X-GitHub-Api-Version': '2022-11-28',
+					accept: 'application/vnd.github+json',
+					'If-Modified-Since': lastFetchedTime.toISOString(),
+				},
+			})
+			.then((res) => res)
+			.catch((err) => {
+				// 勝手に throw すな！
+				console.error(err);
+				return {
+					data: [],
+					headers: {
+						'X-Poll-Interval': 60,
+					},
+				};
+			});
 
 		const notifications = res.data.sort((a, b) => {
 			return dayjs(a.updated_at).isBefore(dayjs(b.updated_at)) ? -1 : 1;
@@ -44,8 +52,6 @@ export default {
 		const pollInterval = res.headers['X-Poll-Interval'] ?? 60;
 
 		for (const notification of notifications) {
-			console.log('notification', notification);
-
 			let emoji = 'question';
 			let link = `<${notification.repository.html_url}|${notification.repository.full_name}>`;
 
