@@ -44,39 +44,53 @@ export default {
 		for (const notification of notifications) {
 			let emoji = 'question';
 			let link = `<${notification.repository.html_url}|${notification.repository.full_name}>`;
+			const debugMsg = [];
 
 			if (notification.subject.type === 'PullRequest') {
-				const pr = await octokit.request(`GET /repos/{owner}/{repo}/pulls/{pull_number}`, {
-					owner: notification.repository.owner.login,
-					repo: notification.repository.name,
-					pull_number: parseInt(notification.subject.url.split('/').slice(-1)[0]),
-				});
+				try {
+					const pr = await octokit.request(`GET /repos/{owner}/{repo}/pulls/{pull_number}`, {
+						owner: notification.repository.owner.login,
+						repo: notification.repository.name,
+						pull_number: parseInt(notification.subject.url.split('/').slice(-1)[0]),
+					});
 
-				if (pr.data.draft) {
-					emoji = 'draft-pr';
-				} else if (pr.data.merged) {
-					emoji = 'merged';
-				} else if (pr.data.state === 'open') {
-					emoji = 'pr-open';
-				} else if (pr.data.state === 'closed') {
-					emoji = 'pr-closed';
+					if (pr.data.draft) {
+						emoji = 'draft-pr';
+					} else if (pr.data.merged) {
+						emoji = 'merged';
+					} else if (pr.data.state === 'open') {
+						emoji = 'pr-open';
+					} else if (pr.data.state === 'closed') {
+						emoji = 'pr-closed';
+					}
+
+					link = `<${pr.data.html_url}|${notification.repository.full_name}#${pr.data.number}>`;
+				} catch (e) {
+					debugMsg.push(`Error: PR ${notification.repository.full_name}#${pr.data.number}; ${e.message}`);
+					console.error(e);
 				}
-
-				link = `<${pr.data.html_url}|${notification.repository.full_name}#${pr.data.number}>`;
 			} else if (notification.subject.type === 'Issue') {
-				const issue = await octokit.request(`GET /repos/{owner}/{repo}/issues/{issue_number}`, {
-					owner: notification.repository.owner.login,
-					repo: notification.repository.name,
-					issue_number: parseInt(notification.subject.url.split('/').slice(-1)[0]),
-				});
+				try {
+					const issue = await octokit.request(`GET /repos/{owner}/{repo}/issues/{issue_number}`, {
+						owner: notification.repository.owner.login,
+						repo: notification.repository.name,
+						issue_number: parseInt(notification.subject.url.split('/').slice(-1)[0]),
+					});
 
-				if (issue.data.state === 'open') {
-					emoji = 'issue-open';
-				} else if (issue.data.state === 'closed') {
-					emoji = 'issue-closed';
+					if (issue.data.state === 'open') {
+						emoji = 'issue-open';
+					} else if (issue.data.state === 'closed') {
+						emoji = 'issue-closed';
+					}
+
+					link = `<${issue.data.html_url}|${notification.repository.full_name}#${issue.data.number}>`;
+				} catch (e) {
+					debugMsg.push(`Error: Issue ${notification.repository.full_name}#${issue.data.number}; ${e.message}`);
+					console.error(e);
 				}
-
-				link = `<${issue.data.html_url}|${notification.repository.full_name}#${issue.data.number}>`;
+			} else {
+				console.log(notification);
+				debugMsg.push(`Error: Unknown: ${JSON.stringify({ ...notification, repository: 'truncated' })}`);
 			}
 
 			const updated_at_unix = dayjs(notification.updated_at).unix();
@@ -110,15 +124,18 @@ export default {
 							text: `- Updated at <!date^${updated_at_unix}^{date_pretty} {time}|${updated_at}>\n- Last Read at <!date^${last_read_at_unix}^{date_pretty} {time}|${last_read_at}>`,
 						},
 					},
-					{
-						type: 'section',
-						text: {
-							type: 'mrkdwn',
-							text: `Debug: \`\`\`\n${JSON.stringify({ ...notification, repository: 'truncated' }, null, 2)}\n\`\`\``,
-						},
-					},
 				],
 			};
+
+			if (debugMsg.length > 0) {
+				body.blocks.push({
+					type: 'section',
+					text: {
+						type: 'mrkdwn',
+						text: `Debug: \`\`\`\n${debugMsg.join('\n')}\n\`\`\``,
+					},
+				});
+			}
 
 			await fetch(env.WH_URL, {
 				method: 'POST',
