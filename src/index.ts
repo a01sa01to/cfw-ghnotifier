@@ -14,6 +14,15 @@ export default {
 		}
 
 		const now = dayjs();
+
+		// sleeping 💤
+		const start = dayjs.tz().set('hour', 1).set('minute', 0).set('second', 0);
+		const end = dayjs.tz().set('hour', 8).set('minute', 0).set('second', 0);
+		if (now.isAfter(start) && now.isBefore(end)) {
+			console.log('Sleeping 💤');
+			return;
+		}
+
 		const lastFetchedTimeUnix = await env.kv.get('last-fetched');
 		const lastFetchedTime = dayjs.unix(parseInt(lastFetchedTimeUnix));
 
