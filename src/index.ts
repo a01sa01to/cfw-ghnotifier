@@ -95,8 +95,6 @@ export default {
 
 			const updated_at_unix = dayjs(notification.updated_at).unix();
 			const updated_at = dayjs(notification.updated_at).tz().format('YYYY-MM-DD HH:mm:ss');
-			const last_read_at_unix = dayjs(notification.last_read_at).unix();
-			const last_read_at = dayjs(notification.last_read_at).tz().format('YYYY-MM-DD HH:mm:ss');
 
 			// https://api.slack.com/reference/surfaces/formatting
 			// https://api.slack.com/messaging/webhooks
@@ -121,11 +119,17 @@ export default {
 						type: 'section',
 						text: {
 							type: 'mrkdwn',
-							text: `- Updated at <!date^${updated_at_unix}^{date_pretty} {time}|${updated_at}>\n- Last Read at <!date^${last_read_at_unix}^{date_pretty} {time}|${last_read_at}>`,
+							text: `- Updated at <!date^${updated_at_unix}^{date_pretty} {time_secs}|${updated_at}>`,
 						},
 					},
 				],
 			};
+
+			if (notification.last_read_at) {
+				const last_read_at_unix = dayjs(notification.last_read_at).unix();
+				const last_read_at = dayjs(notification.last_read_at).tz().format('YYYY-MM-DD HH:mm:ss');
+				body.blocks[2].text.text += `\n- Last Read at <!date^${last_read_at_unix}^{date_pretty} {time_secs}|${last_read_at}>`;
+			}
 
 			if (debugMsg.length > 0) {
 				body.blocks.push({
