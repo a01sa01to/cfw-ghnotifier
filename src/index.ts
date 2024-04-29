@@ -47,11 +47,12 @@ export default {
 			const debugMsg = [];
 
 			if (notification.subject.type === 'PullRequest') {
+				const prNum = parseInt(notification.subject.url.split('/').slice(-1)[0]);
 				try {
 					const pr = await octokit.request(`GET /repos/{owner}/{repo}/pulls/{pull_number}`, {
 						owner: notification.repository.owner.login,
 						repo: notification.repository.name,
-						pull_number: parseInt(notification.subject.url.split('/').slice(-1)[0]),
+						pull_number: prNum,
 					});
 
 					if (pr.data.draft) {
@@ -66,15 +67,16 @@ export default {
 
 					link = `<${pr.data.html_url}|${notification.repository.full_name}#${pr.data.number}>`;
 				} catch (e) {
-					debugMsg.push(`Error: PR ${notification.repository.full_name}#${pr.data.number}; ${e.message}`);
+					debugMsg.push(`Error: PR ${notification.repository.full_name}#${prNum}; ${e}`);
 					console.error(e);
 				}
 			} else if (notification.subject.type === 'Issue') {
+				const issueNum = parseInt(notification.subject.url.split('/').slice(-1)[0]);
 				try {
 					const issue = await octokit.request(`GET /repos/{owner}/{repo}/issues/{issue_number}`, {
 						owner: notification.repository.owner.login,
 						repo: notification.repository.name,
-						issue_number: parseInt(notification.subject.url.split('/').slice(-1)[0]),
+						issue_number: issueNum,
 					});
 
 					if (issue.data.state === 'open') {
@@ -85,7 +87,7 @@ export default {
 
 					link = `<${issue.data.html_url}|${notification.repository.full_name}#${issue.data.number}>`;
 				} catch (e) {
-					debugMsg.push(`Error: Issue ${notification.repository.full_name}#${issue.data.number}; ${e.message}`);
+					debugMsg.push(`Error: Issue ${notification.repository.full_name}#${issueNum}; ${e.message}`);
 					console.error(e);
 				}
 			} else {
