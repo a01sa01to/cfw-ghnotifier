@@ -10,11 +10,11 @@
   },
   "devDependencies": {
     "typescript": "^5.4.5",
-    "wrangler": "^3.52.0"
+    "wrangler": "^3.53.1"
   },
   "packageManager": "yarn@4.1.1",
   "dependencies": {
-    "dayjs": "^1.11.10",
-    "octokit": "^3.2.0"
+    "dayjs": "^1.11.11",
+    "octokit": "^3.2.1"
   }
 }
