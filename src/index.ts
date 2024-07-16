@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
-import { Octokit } from 'octokit';
+import { Octokit } from '@octokit/rest';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -9,10 +9,6 @@ dayjs.tz.setDefault('Asia/Tokyo');
 
 export default {
 	async scheduled(_event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
-		if ((await env.kv.get('last-fetched')) === null) {
-			await env.kv.put('last-fetched', '0', { type: 'text' });
-		}
-
 		const now = dayjs();
 
 		// sleeping 💤
@@ -23,7 +19,7 @@ export default {
 			return;
 		}
 
-		const lastFetchedTimeUnix = await env.kv.get('last-fetched');
+		const lastFetchedTimeUnix = (await env.kv.get('last-fetched')) ?? '0';
 		const lastFetchedTime = dayjs.unix(parseInt(lastFetchedTimeUnix));
 
 		const octokit = new Octokit({ auth: env.GH_TOKEN });
@@ -96,9 +92,15 @@ export default {
 
 					link = `<${issue.data.html_url}|${notification.repository.full_name}#${issue.data.number}>`;
 				} catch (e) {
-					debugMsg.push(`Error: Issue ${notification.repository.full_name}#${issueNum}; ${e.message}`);
+					debugMsg.push(`Error: Issue ${notification.repository.full_name}#${issueNum}; ${e}`);
 					console.error(e);
 				}
+			} else if (notification.reason === 'ci_activity' && notification.subject.title.includes('failed')) {
+				emoji = 'x';
+				link = `<${notification.repository.html_url}/actions|${notification.repository.full_name}>`;
+			} else if (notification.reason === 'security_alert') {
+				emoji = 'warning';
+				link = `<${notification.repository.html_url}/security|${notification.repository.full_name}>`;
 			} else {
 				console.log(notification);
 				debugMsg.push(`Error: Unknown: ${JSON.stringify({ ...notification, repository: 'truncated' })}`);
@@ -163,6 +165,6 @@ export default {
 			await new Promise((resolve) => setTimeout(resolve, 1000));
 		}
 
-		await env.kv.put('last-fetched', now.unix().toString(), { type: 'text' });
+		await env.kv.put('last-fetched', now.unix().toString());
 	},
 };
