@@ -9,12 +9,12 @@
     "cf-typegen": "wrangler types"
   },
   "devDependencies": {
-    "typescript": "^5.4.5",
-    "wrangler": "^3.53.1"
+    "typescript": "^5.5.3",
+    "wrangler": "^3.64.0"
   },
-  "packageManager": "yarn@4.1.1",
+  "packageManager": "yarn@4.3.1",
   "dependencies": {
     "dayjs": "^1.11.11",
-    "octokit": "^3.2.1"
+    "octokit": "^4.0.2"
   }
 }
