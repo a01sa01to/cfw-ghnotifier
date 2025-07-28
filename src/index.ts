@@ -101,9 +101,11 @@ export default {
       } else if (notification.reason === 'security_alert') {
         emoji = 'warning';
         link = `<${notification.repository.html_url}/security|${notification.repository.full_name}>`;
-      } else if (notification.subject.type === "RepositoryInvitation") {
-        emoji = "email"
+      } else if (notification.subject.type === 'RepositoryInvitation') {
+        emoji = 'email';
         link = `<${notification.repository.html_url}|${notification.repository.full_name}>`;
+      } else if (notification.subject.type === 'Release') {
+        emoji = 'rocket';
       } else {
         console.log(notification);
         debugMsg.push(`Error: Unknown: ${JSON.stringify({ ...notification, repository: 'truncated' })}`);
