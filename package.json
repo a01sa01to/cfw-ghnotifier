@@ -9,13 +9,12 @@
     "cf-typegen": "wrangler types"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20241205.0",
-    "typescript": "^5.7.2",
-    "wrangler": "^3.95.0"
+    "typescript": "^5.8.3",
+    "wrangler": "^4.26.0"
   },
-  "packageManager": "yarn@4.5.3",
+  "packageManager": "yarn@4.9.2",
   "dependencies": {
-    "@octokit/rest": "^21.0.2",
+    "@octokit/rest": "^22.0.0",
     "dayjs": "^1.11.13"
   }
 }
