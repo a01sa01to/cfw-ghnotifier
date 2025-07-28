@@ -95,8 +95,12 @@ export default {
           debugMsg.push(`Error: Issue ${notification.repository.full_name}#${issueNum}; ${e}`);
           console.error(e);
         }
-      } else if (notification.reason === 'ci_activity' && notification.subject.title.includes('failed')) {
-        emoji = 'x';
+      } else if (notification.reason === 'ci_activity') {
+        if (notification.subject.title.includes('failed')) {
+          emoji = 'x';
+        } else if (notification.subject.title.includes('cancelled')) {
+          emoji = 'no_entry_sign';
+        }
         link = `<${notification.repository.html_url}/actions|${notification.repository.full_name}>`;
       } else if (notification.reason === 'security_alert') {
         emoji = 'warning';
